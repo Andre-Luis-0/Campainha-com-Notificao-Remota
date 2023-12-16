@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <meta charset="UTF-8" />
+      <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.2.7/mqtt.min.js"></script>
+      <title>t</title>
+   </head>
+   <style>
+      * {
+         padding: 5px;
+         margin: 12px;
+      }
+      body {
+         margin: auto;
+      }
+   </style>
+   <body>
+      <h1>Campainha</h1>
+      <button onclick="requisitar()">Requisitar ultimas notificações</button>
+      <br />
+      <button onclick="limpar()">Limpar</button>
+      <p>Horário das últimas:</p>
+      <div id="output"></div>
+   </body>
+   <script>
+		const options = {
+			keepalive: 60,
+         clientId: clientId,
+         protocolId: 'MQTT',
+         protocolVersion: 4,
+         clean: true,
+         reconnectPeriod: 1000,
+         connectTimeout: 30 * 1000,
+         will: {
+				topic: 'WillMsg',
+            payload: 'Connection Closed abnormally..!',
+            qos: 0,
+            retain: false,
+         },
+      };
+		const clientId = 'mqttjs_' + Math.random().toString(16).substr(2, 8);
+		const host = 'wss://broker.hivemq.com:8884/mqtt';
+		const subTopic = 'ufrniot/butao';
+		const pubTopic = 'ufrniot/requisiçao';
+      var displayed = '';
+      console.log('Connecting mqtt client');
+      const client = mqtt.connect(host, options);
+
+      client.on('error', err => {
+         console.log('Connection error: ', err);
+         client.end();
+      });
+      client.on('reconnect', () => {
+         console.log('Reconnecting...');
+      });
+      client.on('message', (topic, message, packet) => {
+         console.log(
+            `Received Message: ${message.toString()} On topic: ${topic}`
+         );
+         displayed = displayed + '<br>' + message;
+      });
+
+      client.on('connect', function () {
+         console.log('Conectado ao servidor MQTT');
+         client.subscribe(subTopic);
+      });
+      function requisitar() {
+         msg = 'manda pls';
+         client.publish(pubTopic, msg, { qos: 0, retain: false });
+         console.log(pubTopic + ': ' + msg);
+      }
+      function limpar() {
+         displayed = '';
+         updateData();
+      }
+      setInterval(updateData, 3000);
+      function updateData() {
+         document.getElementById('output').innerHTML = displayed;
+      }
+   </script>
+</html>
